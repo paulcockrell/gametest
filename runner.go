@@ -35,30 +35,42 @@ type Sprite struct {
 	frameHeight, frameWidth int
 }
 
-type Action int
+type Actions uint8
 
 const (
-	ActionLeftIdle Action = iota
-	ActionLeftRun
-	ActionRightIdle
-	ActionRightRun
+	Idle Actions = 1 << iota
+	Run
+	Shoot
+	Left
+	Right
+	Up
+	Down
 )
+
+func Set(a, flag Actions) Actions    { return a | flag }
+func Clear(a, flag Actions) Actions  { return a &^ flag }
+func Toggle(a, flag Actions) Actions { return a ^ flag }
+func Has(a, flag Actions) bool       { return a&flag != 0 }
 
 type Runner struct {
 	x, y       int
 	vx, vy     int
 	frameCount int
-	action     Action
-	sprites    map[Action]Sprite
+	actions    Actions
+	sprites    map[Actions]Sprite
 }
 
 func NewRunner(x, y int) *Runner {
+	var a Actions = Idle | Right
+
 	r := &Runner{
-		x: x,
-		y: y,
+		x:       x,
+		y:       y,
+		actions: a,
 	}
-	r.sprites = map[Action]Sprite{
-		ActionLeftIdle: {
+
+	r.sprites = map[Actions]Sprite{
+		Left | Idle: {
 			image:       runnerLeftImage,
 			numFrames:   5,
 			frameOX:     0,
@@ -66,7 +78,7 @@ func NewRunner(x, y int) *Runner {
 			frameHeight: 32,
 			frameWidth:  32,
 		},
-		ActionLeftRun: {
+		Left | Run: {
 			image:       runnerLeftImage,
 			numFrames:   8,
 			frameOX:     0,
@@ -74,7 +86,15 @@ func NewRunner(x, y int) *Runner {
 			frameHeight: 32,
 			frameWidth:  32,
 		},
-		ActionRightIdle: {
+		Left | Shoot: {
+			image:       runnerLeftImage,
+			numFrames:   4,
+			frameOX:     0,
+			frameOY:     64,
+			frameHeight: 32,
+			frameWidth:  32,
+		},
+		Right | Idle: {
 			image:       runnerRightImage,
 			numFrames:   5,
 			frameOX:     0,
@@ -82,11 +102,67 @@ func NewRunner(x, y int) *Runner {
 			frameHeight: 32,
 			frameWidth:  32,
 		},
-		ActionRightRun: {
+		Right | Run: {
 			image:       runnerRightImage,
 			numFrames:   8,
 			frameOX:     0,
 			frameOY:     32,
+			frameHeight: 32,
+			frameWidth:  32,
+		},
+		Right | Shoot: {
+			image:       runnerRightImage,
+			numFrames:   4,
+			frameOX:     0,
+			frameOY:     64,
+			frameHeight: 32,
+			frameWidth:  32,
+		},
+		Up | Idle: {
+			image:       runnerRightImage,
+			numFrames:   5,
+			frameOX:     0,
+			frameOY:     0,
+			frameHeight: 32,
+			frameWidth:  32,
+		},
+		Up | Run: {
+			image:       runnerRightImage,
+			numFrames:   8,
+			frameOX:     0,
+			frameOY:     32,
+			frameHeight: 32,
+			frameWidth:  32,
+		},
+		Up | Shoot: {
+			image:       runnerRightImage,
+			numFrames:   4,
+			frameOX:     0,
+			frameOY:     64,
+			frameHeight: 32,
+			frameWidth:  32,
+		},
+		Down | Idle: {
+			image:       runnerLeftImage,
+			numFrames:   5,
+			frameOX:     0,
+			frameOY:     0,
+			frameHeight: 32,
+			frameWidth:  32,
+		},
+		Down | Run: {
+			image:       runnerLeftImage,
+			numFrames:   8,
+			frameOX:     0,
+			frameOY:     32,
+			frameHeight: 32,
+			frameWidth:  32,
+		},
+		Down | Shoot: {
+			image:       runnerLeftImage,
+			numFrames:   4,
+			frameOX:     0,
+			frameOY:     64,
 			frameHeight: 32,
 			frameWidth:  32,
 		},
@@ -98,57 +174,102 @@ func NewRunner(x, y int) *Runner {
 func (r *Runner) update() {
 	const moveBy = 2
 
-	r.frameCount++
+	// Reset velocity values
 	r.vx = 0
 	r.vy = 0
 
-	// Reset action to idling for last direction incase no keypress detected
-	if r.action == ActionLeftRun {
-		r.action = ActionLeftIdle
+	// Reset movement to default idle
+	if Has(r.actions, Left|Down) {
+		r.actions = Left | Idle
 	}
-	if r.action == ActionRightRun {
-		r.action = ActionRightIdle
+	if Has(r.actions, Right|Up) {
+		r.actions = Right | Idle
 	}
 
+	// Update runner state based on keyboard input
 	// H - Left
 	if ebiten.IsKeyPressed(ebiten.KeyH) {
-		r.action = ActionLeftRun
-		if r.x > 0 {
-			r.vx -= moveBy
-		}
+		r.actions = Left | Run
+		r.vx -= moveBy
 	}
 
 	// L - Right
 	if ebiten.IsKeyPressed(ebiten.KeyL) {
-		r.action = ActionRightRun
-		sprite := r.sprites[r.action]
-		if r.x < screenWidth-(sprite.frameWidth/2) {
-			r.vx += moveBy
-		}
+		r.actions = Right | Run
+		r.vx += moveBy
 	}
 
 	// K - Up
 	if ebiten.IsKeyPressed(ebiten.KeyK) {
-		sprite := r.sprites[r.action]
-		if r.y > -(screenHeight/2)+sprite.frameHeight+10 {
-			r.vy -= moveBy
-		}
+		r.actions = Up | Run
+		r.vy -= moveBy
 	}
 
 	// J - Down
 	if ebiten.IsKeyPressed(ebiten.KeyJ) {
-		sprite := r.sprites[r.action]
-		if r.y < screenHeight-(sprite.frameHeight*3) {
-			r.vy += moveBy
-		}
+		r.actions = Down | Run
+		r.vy += moveBy
 	}
 
+	/* Wall collision detection */
+	s := r.getSprite()
+	if r.x < 0 {
+		r.vx = 0
+	}
+	if r.x >= screenWidth-(s.frameWidth/2) {
+		r.vx = screenWidth - (s.frameWidth / 2)
+	}
+	if r.y <= -(screenHeight/2)+s.frameHeight+10 {
+		r.vy = -(screenHeight / 2) + s.frameHeight + 10
+	}
+	if r.y > screenHeight-(s.frameHeight*3) {
+		r.vy = screenHeight - (s.frameHeight * 3)
+	}
+
+	// Update sprite's x & y positions based on velocity values and
+	// frame counter used by animation
+	r.frameCount++
 	r.x += r.vx
 	r.y += r.vy
 }
 
+func (r Runner) direction() Actions {
+	switch {
+	case Has(r.actions, Left):
+		return Left
+	case Has(r.actions, Right):
+		return Right
+	case Has(r.actions, Up):
+		return Up
+	case Has(r.actions, Down):
+		return Down
+	default:
+		return Right
+	}
+}
+
+func (r Runner) action() Actions {
+	switch {
+	case Has(r.actions, Idle):
+		return Idle
+	case Has(r.actions, Run):
+		return Run
+	case Has(r.actions, Shoot):
+		return Shoot
+	default:
+		return Idle
+	}
+}
+
+func (r Runner) getSprite() Sprite {
+	direction := r.direction()
+	action := r.action()
+
+	return r.sprites[direction|action]
+}
+
 func (r *Runner) draw(screen *ebiten.Image) {
-	sprite := r.sprites[r.action]
+	sprite := r.getSprite()
 
 	op := &ebiten.DrawImageOptions{}
 	w, h := sprite.image.Size()
