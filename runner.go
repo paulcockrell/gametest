@@ -211,6 +211,12 @@ func (r *Runner) update() {
 		r.vy += moveBy
 	}
 
+	// SPACE - Spacebar
+	if ebiten.IsKeyPressed(ebiten.KeyI) {
+		r.actions = r.actions &^ (Idle | Run)
+		r.actions = r.actions | Shoot
+	}
+
 	/* Wall collision detection */
 	s := r.getSprite()
 	if r.x < 0 {
