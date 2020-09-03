@@ -44,6 +44,7 @@ func (g *Game) Update(screen *ebiten.Image) error {
 func (g *Game) Draw(screen *ebiten.Image) {
 	g.level.draw(screen)
 	g.runner.draw(screen)
+	g.runner.drawBullets(screen)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
