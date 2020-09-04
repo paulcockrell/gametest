@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/hajimehoshi/ebiten"
+	"github.com/hajimehoshi/ebiten/inpututil"
 	"github.com/paulcockrell/gametest/resources/images"
 )
 
@@ -75,17 +76,16 @@ func NewBullet(x, y int, a Actions) *Bullet {
 		y:       y, // starting y
 		actions: a, // holds direction
 	}
-	frameOX := 0
-	if a&(Up|Down) != 0 {
-		frameOX = 32
-	}
 	b.sprite = Sprite{
 		image:       bulletImage,
 		numFrames:   1,
-		frameOX:     frameOX,
+		frameOX:     0,
 		frameOY:     0,
 		frameHeight: 32,
 		frameWidth:  32,
+	}
+	if Has(a, (Up | Down)) {
+		b.sprite.frameOX = 1
 	}
 
 	return b
@@ -219,12 +219,8 @@ func (r *Runner) update() {
 	r.vy = 0
 
 	// Reset movement to default idle
-	if Has(r.actions, Left|Down) {
-		r.actions = Left | Idle
-	}
-	if Has(r.actions, Right|Up) {
-		r.actions = Right | Idle
-	}
+	r.actions = r.actions &^ (Run | Shoot)
+	r.actions = r.actions | Idle
 
 	// Update runner state based on keyboard input
 	// H - Left
@@ -252,7 +248,7 @@ func (r *Runner) update() {
 	}
 
 	// SPACE - Spacebar
-	if ebiten.IsKeyPressed(ebiten.KeyI) {
+	if inpututil.IsKeyJustPressed(ebiten.KeyI) {
 		if len(r.bullets) < maxBullets {
 			r.bullets = append(r.bullets, NewBullet(r.x, r.y, r.actions))
 
@@ -261,42 +257,44 @@ func (r *Runner) update() {
 		r.actions = r.actions | Shoot
 	}
 
-	/* Wall collision detection */
-	s := r.getSprite()
-	if r.x < 0 {
-		r.vx = 0
-	}
-	if r.x > screenWidth-(s.frameWidth/2) {
-		r.vx = screenWidth - (s.frameWidth / 2)
-	}
-	if r.y < -(screenHeight/2)+s.frameHeight+10 {
-		r.vy = -(screenHeight / 2) + s.frameHeight + 10
-	}
-	if r.y > screenHeight-(s.frameHeight*3) {
-		r.vy = screenHeight - (s.frameHeight * 3)
-	}
-
 	// Update sprite's x & y positions based on velocity values and
 	// frame counter used by animation
 	r.frameCount++
 	r.x += r.vx
 	r.y += r.vy
 
+	// Wall collision detection
+	s := r.getSprite()
+	if r.x < 0 {
+		r.x = 0
+	}
+	//if r.x >= screenWidth-(s.frameWidth/2) {
+	if r.x > screenWidth-s.frameWidth {
+		r.x = screenWidth - s.frameWidth
+	}
+	if r.y < 0 {
+		r.y = 0
+	}
+	if r.y > screenHeight-s.frameHeight {
+		r.y = screenHeight - s.frameHeight
+	}
+
 	// Update bullets if any
 	var activeBullets []*Bullet
 	for _, bullet := range r.bullets {
-		if bullet.actions&Left != 0 {
+		if Has(bullet.actions, Left) {
 			bullet.x -= 5
 		}
-		if bullet.actions&Right != 0 {
+		if Has(bullet.actions, Right) {
 			bullet.x += 5
 		}
-		if bullet.actions&Up != 0 {
+		if Has(bullet.actions, Up) {
 			bullet.y -= 5
 		}
-		if bullet.actions&Down != 0 {
+		if Has(bullet.actions, Down) {
 			bullet.y += 5
 		}
+
 		// If on screen keep bullet
 		if bullet.x > 0 && bullet.x < screenWidth &&
 			bullet.y > 0 && bullet.y < screenHeight {
@@ -345,9 +343,6 @@ func (r *Runner) draw(screen *ebiten.Image) {
 	sprite := r.getSprite()
 
 	op := &ebiten.DrawImageOptions{}
-	w, h := sprite.image.Size()
-	op.GeoM.Translate(-float64(w)/2.0, -float64(h)/2.0)
-	op.GeoM.Translate(screenWidth/2, screenHeight/2)
 	op.GeoM.Translate(float64(r.x), float64(r.y))
 
 	// Extract sprite frame
@@ -359,18 +354,16 @@ func (r *Runner) draw(screen *ebiten.Image) {
 }
 
 func (r *Runner) drawBullets(screen *ebiten.Image) {
-	for _, bullet := range r.bullets {
+	for i, bullet := range r.bullets {
 		sprite := bullet.sprite
 
 		op := &ebiten.DrawImageOptions{}
-		w, h := sprite.image.Size()
-		op.GeoM.Translate(-float64(w)/2.0, -float64(h)/2.0)
-		op.GeoM.Translate(screenWidth/2, screenHeight/2)
 		op.GeoM.Translate(float64(bullet.x), float64(bullet.y))
 
 		// Extract sprite frame
-		i := (1 / sprite.numFrames) % sprite.numFrames
-		sx, sy := sprite.frameOX+i*sprite.frameWidth, sprite.frameOY
+		//i := (1 / sprite.numFrames) % sprite.numFrames
+		//sx, sy := sprite.frameOX+i*sprite.frameWidth, sprite.frameOY
+		sx, sy := sprite.frameOX*sprite.frameWidth, sprite.frameOY
 		spriteSubImage := sprite.image.SubImage(image.Rect(sx, sy, sx+sprite.frameWidth, sy+sprite.frameHeight)).(*ebiten.Image)
 
 		screen.DrawImage(spriteSubImage, op)
