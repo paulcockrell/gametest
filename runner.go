@@ -47,30 +47,45 @@ type Sprite struct {
 	frameHeight, frameWidth int
 }
 
-type Actions uint8
+type RunnerActions uint16
 
 const (
-	Idle Actions = 1 << iota
-	Run
-	Shoot
-	Left
-	Right
-	Up
-	Down
+	RunnerIdle RunnerActions = 1 << iota
+	RunnerRun
+	RunnerShoot
+	RunnerLeft
+	RunnerRight
+	RunnerUp
+	RunnerDown
+	RunnerHit
+	RunnerDead
 )
 
-func Set(a, flag Actions) Actions    { return a | flag }
-func Clear(a, flag Actions) Actions  { return a &^ flag }
-func Toggle(a, flag Actions) Actions { return a ^ flag }
-func Has(a, flag Actions) bool       { return a&flag != 0 }
+func (ra RunnerActions) Has(flags RunnerActions) bool {
+	return ra&flags != 0
+}
+
+type BulletActions uint8
+
+const (
+	BulletLeft BulletActions = 1 << iota
+	BulletRight
+	BulletUp
+	BulletDown
+	BulletHit
+)
+
+func (ba BulletActions) Has(flags BulletActions) bool {
+	return ba&flags != 0
+}
 
 type Bullet struct {
 	sprite  Sprite
-	actions Actions
+	actions BulletActions
 	x, y    int
 }
 
-func NewBullet(x, y int, a Actions) *Bullet {
+func NewBullet(x, y int, a BulletActions) *Bullet {
 	b := &Bullet{
 		x:       x, // starting x
 		y:       y, // starting y
@@ -84,7 +99,7 @@ func NewBullet(x, y int, a Actions) *Bullet {
 		frameHeight: 32,
 		frameWidth:  32,
 	}
-	if Has(a, (Up | Down)) {
+	if a.Has(BulletUp | BulletDown) {
 		b.sprite.frameOX = 1
 	}
 
@@ -95,13 +110,13 @@ type Runner struct {
 	x, y       int
 	vx, vy     int
 	frameCount int
-	actions    Actions
-	sprites    map[Actions]Sprite
+	actions    RunnerActions
+	sprites    map[RunnerActions]Sprite
 	bullets    []*Bullet
 }
 
 func NewRunner(x, y int) *Runner {
-	var a Actions = Idle | Right
+	var a RunnerActions = RunnerIdle | RunnerRight
 
 	r := &Runner{
 		x:       x,
@@ -109,8 +124,8 @@ func NewRunner(x, y int) *Runner {
 		actions: a,
 	}
 
-	r.sprites = map[Actions]Sprite{
-		Left | Idle: {
+	r.sprites = map[RunnerActions]Sprite{
+		RunnerLeft | RunnerIdle: {
 			image:       runnerLeftImage,
 			numFrames:   5,
 			frameOX:     0,
@@ -118,7 +133,7 @@ func NewRunner(x, y int) *Runner {
 			frameHeight: 32,
 			frameWidth:  32,
 		},
-		Left | Run: {
+		RunnerLeft | RunnerRun: {
 			image:       runnerLeftImage,
 			numFrames:   8,
 			frameOX:     0,
@@ -126,7 +141,7 @@ func NewRunner(x, y int) *Runner {
 			frameHeight: 32,
 			frameWidth:  32,
 		},
-		Left | Shoot: {
+		RunnerLeft | RunnerShoot: {
 			image:       runnerLeftImage,
 			numFrames:   4,
 			frameOX:     0,
@@ -134,7 +149,7 @@ func NewRunner(x, y int) *Runner {
 			frameHeight: 32,
 			frameWidth:  32,
 		},
-		Right | Idle: {
+		RunnerRight | RunnerIdle: {
 			image:       runnerRightImage,
 			numFrames:   5,
 			frameOX:     0,
@@ -142,7 +157,7 @@ func NewRunner(x, y int) *Runner {
 			frameHeight: 32,
 			frameWidth:  32,
 		},
-		Right | Run: {
+		RunnerRight | RunnerRun: {
 			image:       runnerRightImage,
 			numFrames:   8,
 			frameOX:     0,
@@ -150,7 +165,7 @@ func NewRunner(x, y int) *Runner {
 			frameHeight: 32,
 			frameWidth:  32,
 		},
-		Right | Shoot: {
+		RunnerRight | RunnerShoot: {
 			image:       runnerRightImage,
 			numFrames:   4,
 			frameOX:     0,
@@ -158,7 +173,7 @@ func NewRunner(x, y int) *Runner {
 			frameHeight: 32,
 			frameWidth:  32,
 		},
-		Up | Idle: {
+		RunnerUp | RunnerIdle: {
 			image:       runnerRightImage,
 			numFrames:   5,
 			frameOX:     0,
@@ -166,7 +181,7 @@ func NewRunner(x, y int) *Runner {
 			frameHeight: 32,
 			frameWidth:  32,
 		},
-		Up | Run: {
+		RunnerUp | RunnerRun: {
 			image:       runnerRightImage,
 			numFrames:   8,
 			frameOX:     0,
@@ -174,7 +189,7 @@ func NewRunner(x, y int) *Runner {
 			frameHeight: 32,
 			frameWidth:  32,
 		},
-		Up | Shoot: {
+		RunnerUp | RunnerShoot: {
 			image:       runnerRightImage,
 			numFrames:   4,
 			frameOX:     0,
@@ -182,7 +197,7 @@ func NewRunner(x, y int) *Runner {
 			frameHeight: 32,
 			frameWidth:  32,
 		},
-		Down | Idle: {
+		RunnerDown | RunnerIdle: {
 			image:       runnerLeftImage,
 			numFrames:   5,
 			frameOX:     0,
@@ -190,7 +205,7 @@ func NewRunner(x, y int) *Runner {
 			frameHeight: 32,
 			frameWidth:  32,
 		},
-		Down | Run: {
+		RunnerDown | RunnerRun: {
 			image:       runnerLeftImage,
 			numFrames:   8,
 			frameOX:     0,
@@ -198,7 +213,7 @@ func NewRunner(x, y int) *Runner {
 			frameHeight: 32,
 			frameWidth:  32,
 		},
-		Down | Shoot: {
+		RunnerDown | RunnerShoot: {
 			image:       runnerLeftImage,
 			numFrames:   4,
 			frameOX:     0,
@@ -219,45 +234,51 @@ func (r *Runner) update() {
 	r.vy = 0
 
 	// Reset movement to default idle
-	r.actions = r.actions &^ (Run | Shoot)
-	r.actions = r.actions | Idle
+	r.actions = r.actions &^ (RunnerRun | RunnerShoot)
+	r.actions = r.actions | RunnerIdle
 
-	// Update runner state based on keyboard input
-	// H - Left
+	// RunnerUpdate runner state based on keyboard input
+	// H - RunnerLeft
 	if ebiten.IsKeyPressed(ebiten.KeyH) {
-		r.actions = Left | Run
+		r.actions = RunnerLeft | RunnerRun
 		r.vx -= moveBy
 	}
 
-	// L - Right
+	// L - RunnerRight
 	if ebiten.IsKeyPressed(ebiten.KeyL) {
-		r.actions = Right | Run
+		r.actions = RunnerRight | RunnerRun
 		r.vx += moveBy
 	}
 
-	// K - Up
+	// K - RunnerUp
 	if ebiten.IsKeyPressed(ebiten.KeyK) {
-		r.actions = Up | Run
+		r.actions = RunnerUp | RunnerRun
 		r.vy -= moveBy
 	}
 
-	// J - Down
+	// J - RunnerDown
 	if ebiten.IsKeyPressed(ebiten.KeyJ) {
-		r.actions = Down | Run
+		r.actions = RunnerDown | RunnerRun
 		r.vy += moveBy
 	}
 
 	// SPACE - Spacebar
 	if inpututil.IsKeyJustPressed(ebiten.KeyI) {
 		if len(r.bullets) < maxBullets {
-			r.bullets = append(r.bullets, NewBullet(r.x, r.y, r.actions))
+			direction := runnerDirToBulletDir(r)
+			bullet := NewBullet(
+				r.x,
+				r.y,
+				direction,
+			)
+			r.bullets = append(r.bullets, bullet)
 
 		}
-		r.actions = r.actions &^ (Idle | Run)
-		r.actions = r.actions | Shoot
+		r.actions = r.actions &^ (RunnerIdle | RunnerRun)
+		r.actions = r.actions | RunnerShoot
 	}
 
-	// Update sprite's x & y positions based on velocity values and
+	// RunnerUpdate sprite's x & y positions based on velocity values and
 	// frame counter used by animation
 	r.frameCount++
 	r.x += r.vx
@@ -279,19 +300,19 @@ func (r *Runner) update() {
 		r.y = screenHeight - s.frameHeight
 	}
 
-	// Update bullets if any
+	// RunnerUpdate bullets if any
 	var activeBullets []*Bullet
 	for _, bullet := range r.bullets {
-		if Has(bullet.actions, Left) {
+		if bullet.actions.Has(BulletLeft) {
 			bullet.x -= 5
 		}
-		if Has(bullet.actions, Right) {
+		if bullet.actions.Has(BulletRight) {
 			bullet.x += 5
 		}
-		if Has(bullet.actions, Up) {
+		if bullet.actions.Has(BulletUp) {
 			bullet.y -= 5
 		}
-		if Has(bullet.actions, Down) {
+		if bullet.actions.Has(BulletDown) {
 			bullet.y += 5
 		}
 
@@ -304,31 +325,31 @@ func (r *Runner) update() {
 	r.bullets = activeBullets
 }
 
-func (r Runner) direction() Actions {
+func (r Runner) direction() RunnerActions {
 	switch {
-	case Has(r.actions, Left):
-		return Left
-	case Has(r.actions, Right):
-		return Right
-	case Has(r.actions, Up):
-		return Up
-	case Has(r.actions, Down):
-		return Down
+	case r.actions.Has(RunnerLeft):
+		return RunnerLeft
+	case r.actions.Has(RunnerRight):
+		return RunnerRight
+	case r.actions.Has(RunnerUp):
+		return RunnerUp
+	case r.actions.Has(RunnerDown):
+		return RunnerDown
 	default:
-		return Right
+		return RunnerRight
 	}
 }
 
-func (r Runner) action() Actions {
+func (r Runner) action() RunnerActions {
 	switch {
-	case Has(r.actions, Idle):
-		return Idle
-	case Has(r.actions, Run):
-		return Run
-	case Has(r.actions, Shoot):
-		return Shoot
+	case r.actions.Has(RunnerIdle):
+		return RunnerIdle
+	case r.actions.Has(RunnerRun):
+		return RunnerRun
+	case r.actions.Has(RunnerShoot):
+		return RunnerShoot
 	default:
-		return Idle
+		return RunnerIdle
 	}
 }
 
@@ -367,4 +388,20 @@ func (r *Runner) drawBullets(screen *ebiten.Image) {
 
 		screen.DrawImage(spriteSubImage, op)
 	}
+}
+
+func runnerDirToBulletDir(r *Runner) BulletActions {
+	var direction BulletActions
+	switch {
+	case r.actions.Has(RunnerLeft):
+		direction = BulletLeft
+	case r.actions.Has(RunnerRight):
+		direction = BulletRight
+	case r.actions.Has(RunnerUp):
+		direction = BulletUp
+	case r.actions.Has(RunnerDown):
+		direction = BulletDown
+	}
+
+	return direction
 }
