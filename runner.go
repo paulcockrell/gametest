@@ -17,7 +17,7 @@ var (
 )
 
 const (
-	maxBullets = 5
+	maxBullets = 3
 )
 
 func init() {
@@ -354,16 +354,15 @@ func (r *Runner) draw(screen *ebiten.Image) {
 }
 
 func (r *Runner) drawBullets(screen *ebiten.Image) {
-	for i, bullet := range r.bullets {
+	for _, bullet := range r.bullets {
 		sprite := bullet.sprite
 
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(bullet.x), float64(bullet.y))
 
 		// Extract sprite frame
-		//i := (1 / sprite.numFrames) % sprite.numFrames
-		//sx, sy := sprite.frameOX+i*sprite.frameWidth, sprite.frameOY
-		sx, sy := sprite.frameOX*sprite.frameWidth, sprite.frameOY
+		i := (1 / sprite.numFrames) % sprite.numFrames
+		sx, sy := sprite.frameOX+i*sprite.frameWidth, sprite.frameOY
 		spriteSubImage := sprite.image.SubImage(image.Rect(sx, sy, sx+sprite.frameWidth, sy+sprite.frameHeight)).(*ebiten.Image)
 
 		screen.DrawImage(spriteSubImage, op)
