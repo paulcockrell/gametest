@@ -6,7 +6,6 @@ import (
 	"log"
 
 	"github.com/hajimehoshi/ebiten"
-	"github.com/hajimehoshi/ebiten/inpututil"
 	"github.com/paulcockrell/gametest/resources/images"
 )
 
@@ -120,7 +119,7 @@ func NewVaxerMan(x, y int) *VaxerMan {
 	r.sprites = map[VaxerManActions]Sprite{
 		VaxerManLeft | VaxerManIdle: {
 			image:       vaxermanImage,
-			numFrames:   4,
+			numFrames:   6,
 			frameOX:     32 * 0,
 			frameOY:     32 * 0,
 			frameHeight: 32,
@@ -144,7 +143,7 @@ func NewVaxerMan(x, y int) *VaxerMan {
 		},
 		VaxerManRight | VaxerManIdle: {
 			image:       vaxermanImage,
-			numFrames:   4,
+			numFrames:   6,
 			frameOX:     32 * 0,
 			frameOY:     32 * 1,
 			frameHeight: 32,
@@ -168,9 +167,9 @@ func NewVaxerMan(x, y int) *VaxerMan {
 		},
 		VaxerManUp | VaxerManIdle: {
 			image:       vaxermanImage,
-			numFrames:   4,
+			numFrames:   6,
 			frameOX:     32 * 0,
-			frameOY:     32 * 1,
+			frameOY:     32 * 6,
 			frameHeight: 32,
 			frameWidth:  32,
 		},
@@ -192,9 +191,9 @@ func NewVaxerMan(x, y int) *VaxerMan {
 		},
 		VaxerManDown | VaxerManIdle: {
 			image:       vaxermanImage,
-			numFrames:   4,
+			numFrames:   6,
 			frameOX:     32 * 0,
-			frameOY:     32 * 0,
+			frameOY:     32 * 6,
 			frameHeight: 32,
 			frameWidth:  32,
 		},
@@ -256,7 +255,8 @@ func (r *VaxerMan) update() {
 	}
 
 	// SPACE - Spacebar
-	if inpututil.IsKeyJustPressed(ebiten.KeyI) {
+	//if inpututil.IsKeyJustPressed(ebiten.KeyI) {
+	if ebiten.IsKeyPressed(ebiten.KeyI) {
 		if len(r.bullets) < maxBullets {
 			direction := vaxermanDirToBulletDir(r)
 			bullet := NewBullet(
