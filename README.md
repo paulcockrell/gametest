@@ -1,6 +1,11 @@
 # GameTest
 Golang RPG game - For the WEB (using WASM)
 
+## Setup
+1. Clone this repo
+2. Install dependencies: `go get ./...`
+3. Install image process executable: `go get github.com/hajimehoshi/file2byteslice`
+
 ## Run
 
 ### Local machine (native)
