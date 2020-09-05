@@ -2,22 +2,21 @@
 <html>
     <head>
         <title>VaxerMan - The Corona Virus Killer</title>
+        <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.3/build/pure-min.css" integrity="sha384-cg6SkqEOCV1NbJoCu11+bm0NvBRc8IYLRGXkmNrqUBfTjmMYwNKPWBTIKyw9mHNJ" crossorigin="anonymous">
     </head>
 </html>
 <body>
-    <script src="wasm_exec.js"></script>
-    <script>
-    // Polyfill
-    if (!WebAssembly.instantiateStreaming) {
-    WebAssembly.instantiateStreaming = async (resp, importObject) => {
-        const source = await (await resp).arrayBuffer();
-        return await WebAssembly.instantiate(source, importObject);
-    };
-    }
-
-    const go = new Go();
-    WebAssembly.instantiateStreaming(fetch("gametest.wasm"), go.importObject).then(result => {
-    go.run(result.instance);
-    });
-    </script>
+    <h1>VaxerMan - The Corona Virus Killer</h1>
+    <p>
+        A little game to commemorate the mad summer of 2020. Why not blast away the last
+        of the virus in this game written in Go. You can view the source at
+        <a href="https://github.com/paulcockrell/gametest" alt="Github repository">Github</a>
+    </p>
+    <iframe
+        src="gametest.html"
+        title="VaxerMan - The Corona Virus Killer"
+        width="640"
+        height="640"
+        style="border:none"
+        scrolling="no"></iframe>
 </body>
