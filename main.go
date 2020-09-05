@@ -20,8 +20,8 @@ const (
 )
 
 type Game struct {
-	runner *Runner
-	level  *Level
+	vaxerman *VaxerMan
+	level    *Level
 }
 
 func NewGame() *Game {
@@ -31,20 +31,20 @@ func NewGame() *Game {
 }
 
 func (g *Game) init() {
-	g.runner = NewRunner(screenWidth/2, screenHeight/2)
+	g.vaxerman = NewVaxerMan(screenWidth/2, screenHeight/2)
 	g.level = NewLevel("resources/levels/level_one.json")
 }
 
 func (g *Game) Update(screen *ebiten.Image) error {
-	g.runner.update()
+	g.vaxerman.update()
 
 	return nil
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	g.level.draw(screen)
-	g.runner.draw(screen)
-	g.runner.drawBullets(screen)
+	g.vaxerman.draw(screen)
+	g.vaxerman.drawBullets(screen)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {

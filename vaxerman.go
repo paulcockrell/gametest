@@ -1,4 +1,3 @@
-/*
 package main
 
 import (
@@ -12,9 +11,8 @@ import (
 )
 
 var (
-	runnerRightImage *ebiten.Image
-	runnerLeftImage  *ebiten.Image
-	bulletImage      *ebiten.Image
+	vaxermanImage *ebiten.Image
+	bulletImage   *ebiten.Image
 )
 
 const (
@@ -22,17 +20,11 @@ const (
 )
 
 func init() {
-	img, _, err := image.Decode(bytes.NewReader(images.RunnerRight_png))
+	img, _, err := image.Decode(bytes.NewReader(images.VaxerMan_png))
 	if err != nil {
 		log.Fatalf("error decoding image: %v", err)
 	}
-	runnerRightImage, _ = ebiten.NewImageFromImage(img, ebiten.FilterDefault)
-
-	img, _, err = image.Decode(bytes.NewReader(images.RunnerLeft_png))
-	if err != nil {
-		log.Fatalf("error decoding image: %v", err)
-	}
-	runnerLeftImage, _ = ebiten.NewImageFromImage(img, ebiten.FilterDefault)
+	vaxermanImage, _ = ebiten.NewImageFromImage(img, ebiten.FilterDefault)
 
 	img, _, err = image.Decode(bytes.NewReader(images.Bullet_png))
 	if err != nil {
@@ -48,21 +40,21 @@ type Sprite struct {
 	frameHeight, frameWidth int
 }
 
-type RunnerActions uint16
+type VaxerManActions uint16
 
 const (
-	RunnerIdle RunnerActions = 1 << iota
-	RunnerRun
-	RunnerShoot
-	RunnerLeft
-	RunnerRight
-	RunnerUp
-	RunnerDown
-	RunnerHit
-	RunnerDead
+	VaxerManIdle VaxerManActions = 1 << iota
+	VaxerManRun
+	VaxerManShoot
+	VaxerManLeft
+	VaxerManRight
+	VaxerManUp
+	VaxerManDown
+	VaxerManHit
+	VaxerManDead
 )
 
-func (ra RunnerActions) Has(flags RunnerActions) bool {
+func (ra VaxerManActions) Has(flags VaxerManActions) bool {
 	return ra&flags != 0
 }
 
@@ -107,118 +99,118 @@ func NewBullet(x, y int, a BulletActions) *Bullet {
 	return b
 }
 
-type Runner struct {
+type VaxerMan struct {
 	x, y       int
 	vx, vy     int
 	frameCount int
-	actions    RunnerActions
-	sprites    map[RunnerActions]Sprite
+	actions    VaxerManActions
+	sprites    map[VaxerManActions]Sprite
 	bullets    []*Bullet
 }
 
-func NewRunner(x, y int) *Runner {
-	var a RunnerActions = RunnerIdle | RunnerRight
+func NewVaxerMan(x, y int) *VaxerMan {
+	var a VaxerManActions = VaxerManIdle | VaxerManRight
 
-	r := &Runner{
+	r := &VaxerMan{
 		x:       x,
 		y:       y,
 		actions: a,
 	}
 
-	r.sprites = map[RunnerActions]Sprite{
-		RunnerLeft | RunnerIdle: {
-			image:       runnerLeftImage,
-			numFrames:   5,
-			frameOX:     0,
-			frameOY:     0,
-			frameHeight: 32,
-			frameWidth:  32,
-		},
-		RunnerLeft | RunnerRun: {
-			image:       runnerLeftImage,
-			numFrames:   8,
-			frameOX:     0,
-			frameOY:     32,
-			frameHeight: 32,
-			frameWidth:  32,
-		},
-		RunnerLeft | RunnerShoot: {
-			image:       runnerLeftImage,
+	r.sprites = map[VaxerManActions]Sprite{
+		VaxerManLeft | VaxerManIdle: {
+			image:       vaxermanImage,
 			numFrames:   4,
-			frameOX:     0,
-			frameOY:     64,
+			frameOX:     32 * 0,
+			frameOY:     32 * 0,
 			frameHeight: 32,
 			frameWidth:  32,
 		},
-		RunnerRight | RunnerIdle: {
-			image:       runnerRightImage,
+		VaxerManLeft | VaxerManRun: {
+			image:       vaxermanImage,
+			numFrames:   6,
+			frameOX:     32 * 0,
+			frameOY:     32 * 4,
+			frameHeight: 32,
+			frameWidth:  32,
+		},
+		VaxerManLeft | VaxerManShoot: {
+			image:       vaxermanImage,
 			numFrames:   5,
-			frameOX:     0,
-			frameOY:     0,
+			frameOX:     32 * 0,
+			frameOY:     32 * 2,
 			frameHeight: 32,
 			frameWidth:  32,
 		},
-		RunnerRight | RunnerRun: {
-			image:       runnerRightImage,
-			numFrames:   8,
-			frameOX:     0,
-			frameOY:     32,
-			frameHeight: 32,
-			frameWidth:  32,
-		},
-		RunnerRight | RunnerShoot: {
-			image:       runnerRightImage,
+		VaxerManRight | VaxerManIdle: {
+			image:       vaxermanImage,
 			numFrames:   4,
-			frameOX:     0,
-			frameOY:     64,
+			frameOX:     32 * 0,
+			frameOY:     32 * 1,
 			frameHeight: 32,
 			frameWidth:  32,
 		},
-		RunnerUp | RunnerIdle: {
-			image:       runnerRightImage,
+		VaxerManRight | VaxerManRun: {
+			image:       vaxermanImage,
+			numFrames:   6,
+			frameOX:     32 * 0,
+			frameOY:     32 * 5,
+			frameHeight: 32,
+			frameWidth:  32,
+		},
+		VaxerManRight | VaxerManShoot: {
+			image:       vaxermanImage,
 			numFrames:   5,
-			frameOX:     0,
-			frameOY:     0,
+			frameOX:     32 * 0,
+			frameOY:     32 * 3,
 			frameHeight: 32,
 			frameWidth:  32,
 		},
-		RunnerUp | RunnerRun: {
-			image:       runnerRightImage,
-			numFrames:   8,
-			frameOX:     0,
-			frameOY:     32,
-			frameHeight: 32,
-			frameWidth:  32,
-		},
-		RunnerUp | RunnerShoot: {
-			image:       runnerRightImage,
+		VaxerManUp | VaxerManIdle: {
+			image:       vaxermanImage,
 			numFrames:   4,
-			frameOX:     0,
-			frameOY:     64,
+			frameOX:     32 * 0,
+			frameOY:     32 * 1,
 			frameHeight: 32,
 			frameWidth:  32,
 		},
-		RunnerDown | RunnerIdle: {
-			image:       runnerLeftImage,
+		VaxerManUp | VaxerManRun: {
+			image:       vaxermanImage,
+			numFrames:   6,
+			frameOX:     32 * 0,
+			frameOY:     32 * 5,
+			frameHeight: 32,
+			frameWidth:  32,
+		},
+		VaxerManUp | VaxerManShoot: {
+			image:       vaxermanImage,
+			numFrames:   4,
+			frameOX:     32 * 0,
+			frameOY:     32 * 3,
+			frameHeight: 32,
+			frameWidth:  32,
+		},
+		VaxerManDown | VaxerManIdle: {
+			image:       vaxermanImage,
+			numFrames:   4,
+			frameOX:     32 * 0,
+			frameOY:     32 * 0,
+			frameHeight: 32,
+			frameWidth:  32,
+		},
+		VaxerManDown | VaxerManRun: {
+			image:       vaxermanImage,
+			numFrames:   6,
+			frameOX:     32 * 0,
+			frameOY:     32 * 4,
+			frameHeight: 32,
+			frameWidth:  32,
+		},
+		VaxerManDown | VaxerManShoot: {
+			image:       vaxermanImage,
 			numFrames:   5,
-			frameOX:     0,
-			frameOY:     0,
-			frameHeight: 32,
-			frameWidth:  32,
-		},
-		RunnerDown | RunnerRun: {
-			image:       runnerLeftImage,
-			numFrames:   8,
-			frameOX:     0,
-			frameOY:     32,
-			frameHeight: 32,
-			frameWidth:  32,
-		},
-		RunnerDown | RunnerShoot: {
-			image:       runnerLeftImage,
-			numFrames:   4,
-			frameOX:     0,
-			frameOY:     64,
+			frameOX:     32 * 0,
+			frameOY:     32 * 2,
 			frameHeight: 32,
 			frameWidth:  32,
 		},
@@ -227,7 +219,7 @@ func NewRunner(x, y int) *Runner {
 	return r
 }
 
-func (r *Runner) update() {
+func (r *VaxerMan) update() {
 	const moveBy = 2
 
 	// Reset velocity values
@@ -235,38 +227,38 @@ func (r *Runner) update() {
 	r.vy = 0
 
 	// Reset movement to default idle
-	r.actions = r.actions &^ (RunnerRun | RunnerShoot)
-	r.actions = r.actions | RunnerIdle
+	r.actions = r.actions &^ (VaxerManRun | VaxerManShoot)
+	r.actions = r.actions | VaxerManIdle
 
-	// RunnerUpdate runner state based on keyboard input
-	// H - RunnerLeft
+	// VaxerManUpdate vaxerman state based on keyboard input
+	// H - VaxerManLeft
 	if ebiten.IsKeyPressed(ebiten.KeyH) {
-		r.actions = RunnerLeft | RunnerRun
+		r.actions = VaxerManLeft | VaxerManRun
 		r.vx -= moveBy
 	}
 
-	// L - RunnerRight
+	// L - VaxerManRight
 	if ebiten.IsKeyPressed(ebiten.KeyL) {
-		r.actions = RunnerRight | RunnerRun
+		r.actions = VaxerManRight | VaxerManRun
 		r.vx += moveBy
 	}
 
-	// K - RunnerUp
+	// K - VaxerManUp
 	if ebiten.IsKeyPressed(ebiten.KeyK) {
-		r.actions = RunnerUp | RunnerRun
+		r.actions = VaxerManUp | VaxerManRun
 		r.vy -= moveBy
 	}
 
-	// J - RunnerDown
+	// J - VaxerManDown
 	if ebiten.IsKeyPressed(ebiten.KeyJ) {
-		r.actions = RunnerDown | RunnerRun
+		r.actions = VaxerManDown | VaxerManRun
 		r.vy += moveBy
 	}
 
 	// SPACE - Spacebar
 	if inpututil.IsKeyJustPressed(ebiten.KeyI) {
 		if len(r.bullets) < maxBullets {
-			direction := runnerDirToBulletDir(r)
+			direction := vaxermanDirToBulletDir(r)
 			bullet := NewBullet(
 				r.x,
 				r.y,
@@ -275,11 +267,11 @@ func (r *Runner) update() {
 			r.bullets = append(r.bullets, bullet)
 
 		}
-		r.actions = r.actions &^ (RunnerIdle | RunnerRun)
-		r.actions = r.actions | RunnerShoot
+		r.actions = r.actions &^ (VaxerManIdle | VaxerManRun)
+		r.actions = r.actions | VaxerManShoot
 	}
 
-	// RunnerUpdate sprite's x & y positions based on velocity values and
+	// VaxerManUpdate sprite's x & y positions based on velocity values and
 	// frame counter used by animation
 	r.frameCount++
 	r.x += r.vx
@@ -301,7 +293,7 @@ func (r *Runner) update() {
 		r.y = screenHeight - s.frameHeight
 	}
 
-	// RunnerUpdate bullets if any
+	// VaxerManUpdate bullets if any
 	var activeBullets []*Bullet
 	for _, bullet := range r.bullets {
 		if bullet.actions.Has(BulletLeft) {
@@ -326,42 +318,42 @@ func (r *Runner) update() {
 	r.bullets = activeBullets
 }
 
-func (r Runner) direction() RunnerActions {
+func (r VaxerMan) direction() VaxerManActions {
 	switch {
-	case r.actions.Has(RunnerLeft):
-		return RunnerLeft
-	case r.actions.Has(RunnerRight):
-		return RunnerRight
-	case r.actions.Has(RunnerUp):
-		return RunnerUp
-	case r.actions.Has(RunnerDown):
-		return RunnerDown
+	case r.actions.Has(VaxerManLeft):
+		return VaxerManLeft
+	case r.actions.Has(VaxerManRight):
+		return VaxerManRight
+	case r.actions.Has(VaxerManUp):
+		return VaxerManUp
+	case r.actions.Has(VaxerManDown):
+		return VaxerManDown
 	default:
-		return RunnerRight
+		return VaxerManRight
 	}
 }
 
-func (r Runner) action() RunnerActions {
+func (r VaxerMan) action() VaxerManActions {
 	switch {
-	case r.actions.Has(RunnerIdle):
-		return RunnerIdle
-	case r.actions.Has(RunnerRun):
-		return RunnerRun
-	case r.actions.Has(RunnerShoot):
-		return RunnerShoot
+	case r.actions.Has(VaxerManIdle):
+		return VaxerManIdle
+	case r.actions.Has(VaxerManRun):
+		return VaxerManRun
+	case r.actions.Has(VaxerManShoot):
+		return VaxerManShoot
 	default:
-		return RunnerIdle
+		return VaxerManIdle
 	}
 }
 
-func (r Runner) getSprite() Sprite {
+func (r VaxerMan) getSprite() Sprite {
 	direction := r.direction()
 	action := r.action()
 
 	return r.sprites[direction|action]
 }
 
-func (r *Runner) draw(screen *ebiten.Image) {
+func (r *VaxerMan) draw(screen *ebiten.Image) {
 	sprite := r.getSprite()
 
 	op := &ebiten.DrawImageOptions{}
@@ -375,7 +367,7 @@ func (r *Runner) draw(screen *ebiten.Image) {
 	screen.DrawImage(spriteSubImage, op)
 }
 
-func (r *Runner) drawBullets(screen *ebiten.Image) {
+func (r *VaxerMan) drawBullets(screen *ebiten.Image) {
 	for _, bullet := range r.bullets {
 		sprite := bullet.sprite
 
@@ -391,20 +383,18 @@ func (r *Runner) drawBullets(screen *ebiten.Image) {
 	}
 }
 
-func runnerDirToBulletDir(r *Runner) BulletActions {
+func vaxermanDirToBulletDir(r *VaxerMan) BulletActions {
 	var direction BulletActions
 	switch {
-	case r.actions.Has(RunnerLeft):
+	case r.actions.Has(VaxerManLeft):
 		direction = BulletLeft
-	case r.actions.Has(RunnerRight):
+	case r.actions.Has(VaxerManRight):
 		direction = BulletRight
-	case r.actions.Has(RunnerUp):
+	case r.actions.Has(VaxerManUp):
 		direction = BulletUp
-	case r.actions.Has(RunnerDown):
+	case r.actions.Has(VaxerManDown):
 		direction = BulletDown
 	}
 
 	return direction
 }
-*/
-package main
