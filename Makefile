@@ -7,5 +7,8 @@ assets:
 run:
 	go run main.go vaxerman.go level.go
 
-buildWeb:
-	GOOS=js GOARCH=wasm go build -o gametest.wasm github.com/paulcockrell/gametest
+buildweb:
+	GOOS=js GOARCH=wasm go build -o ./build/web/gametest.wasm github.com/paulcockrell/gametest
+
+runweb:
+	goexec 'http.ListenAndServe(`:8080`, http.FileServer(http.Dir(`./build/web`)))'
