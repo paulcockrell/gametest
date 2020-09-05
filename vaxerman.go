@@ -85,14 +85,11 @@ func NewBullet(x, y int, a BulletActions) *Bullet {
 	}
 	b.sprite = Sprite{
 		image:       bulletImage,
-		numFrames:   1,
+		numFrames:   2,
 		frameOX:     0,
 		frameOY:     0,
 		frameHeight: 32,
 		frameWidth:  32,
-	}
-	if a.Has(BulletUp | BulletDown) {
-		b.sprite.frameOX = 1
 	}
 
 	return b
@@ -259,9 +256,20 @@ func (r *VaxerMan) update() {
 	if ebiten.IsKeyPressed(ebiten.KeyI) {
 		if len(r.bullets) < maxBullets {
 			direction := vaxermanDirToBulletDir(r)
+			vx, vy := 0, 0
+			switch direction {
+			case BulletLeft:
+				vx -= 32 / 2
+			case BulletRight:
+				vx += 32 / 2
+			case BulletUp:
+				vy -= 32 / 2
+			case BulletDown:
+				vy += 32 / 2
+			}
 			bullet := NewBullet(
-				r.x,
-				r.y,
+				r.x+vx,
+				r.y+vy,
 				direction,
 			)
 			r.bullets = append(r.bullets, bullet)
@@ -375,7 +383,7 @@ func (r *VaxerMan) drawBullets(screen *ebiten.Image) {
 		op.GeoM.Translate(float64(bullet.x), float64(bullet.y))
 
 		// Extract sprite frame
-		i := (1 / sprite.numFrames) % sprite.numFrames
+		i := (r.frameCount / sprite.numFrames) % sprite.numFrames
 		sx, sy := sprite.frameOX+i*sprite.frameWidth, sprite.frameOY
 		spriteSubImage := sprite.image.SubImage(image.Rect(sx, sy, sx+sprite.frameWidth, sy+sprite.frameHeight)).(*ebiten.Image)
 
