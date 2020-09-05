@@ -53,7 +53,7 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 
 func main() {
 	ebiten.SetWindowSize(screenWidth*2, screenHeight*2)
-	ebiten.SetWindowTitle("Jon Wicker 3 - Parallelagram")
+	ebiten.SetWindowTitle("VaxerMan - Corona Virus Killer")
 	if err := ebiten.RunGame(NewGame()); err != nil {
 		log.Fatalf("error starting game %v", err)
 	}
