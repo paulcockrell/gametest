@@ -6,3 +6,6 @@ assets:
 	file2byteslice -input=./resources/images/tiles.png -output=./resources/images/tiles.go -package=images -var=Tiles_png
 run:
 	go run main.go vaxerman.go level.go
+
+buildWeb:
+	GOOS=js GOARCH=wasm go build -o gametest.wasm github.com/paulcockrell/gametest
