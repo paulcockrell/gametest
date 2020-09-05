@@ -2,13 +2,12 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"image"
-	"io/ioutil"
 	"log"
 
 	"github.com/hajimehoshi/ebiten"
 	"github.com/paulcockrell/gametest/resources/images"
+	"github.com/paulcockrell/gametest/resources/levels"
 )
 
 // Tile constants
@@ -34,16 +33,8 @@ type Level struct {
 }
 
 func NewLevel(path string) *Level {
-	level := &Level{}
-
-	file, err := ioutil.ReadFile(path)
-	if err != nil {
-		log.Fatalf("error loading level: %q", err)
-	}
-
-	err = json.Unmarshal([]byte(file), &level.layers)
-	if err != nil {
-		log.Fatalf("error parsing level: %q", err)
+	level := &Level{
+		layers: levels.LevelOne,
 	}
 
 	return level
