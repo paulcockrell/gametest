@@ -4,7 +4,8 @@ Golang RPG game - For the WEB (using WASM)
 ## Setup
 1. Clone this repo
 2. Install dependencies: `go get ./...`
-3. Install image process executable: `go get github.com/hajimehoshi/file2byteslice`
+3. Install image process executable: `go install github.com/hajimehoshi/file2byteslice`
+4. Install Go command line tool to execute Go code (a webserver in this case): `go install github.com/shurcooL/goexec`
 
 ## Run
 
