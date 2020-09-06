@@ -47,7 +47,6 @@ func (g *Game) init() {
 func (g *Game) Update(screen *ebiten.Image) error {
 	g.vaxerman.update()
 	g.updateEnemies()
-	g.detectCollisions()
 
 	return nil
 }
@@ -68,6 +67,9 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 func (g *Game) updateEnemies() {
 	currentEnemies := make([]*Enemy, 0)
 	for _, enemy := range g.enemies {
+		if enemy.HasInfectedPlayer(g.vaxerman) {
+			g.vaxerman.SetDead()
+		}
 		if g.vaxerman.hasShotEnemy(enemy) {
 			enemy.status = EnemyHit
 		} else {
@@ -77,25 +79,13 @@ func (g *Game) updateEnemies() {
 			currentEnemies = append(currentEnemies, enemy)
 		}
 	}
-
 	g.enemies = currentEnemies
-	if MaxEnemies == len(g.enemies) {
-		return
-	}
-	if len(g.enemies) < 1 || (rand.Intn(5) == 1) {
-		x, y, vx, vy := GenerateEnemyStartPos()
 
-		newEnemy := NewEnemy(
-			x,
-			y,
-			vx,
-			vy,
-		)
+	if len(g.enemies) < MaxEnemies && (rand.Intn(5) == 1) {
+		x, y, vx, vy := GenerateEnemyStartPos()
+		newEnemy := NewEnemy(x, y, vx, vy)
 		g.enemies = append(g.enemies, newEnemy)
 	}
-}
-
-func (g *Game) detectCollisions() {
 }
 
 func main() {

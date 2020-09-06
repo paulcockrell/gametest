@@ -7,12 +7,10 @@ assets:
 
 # Run locally for development
 run:
-	go run main.go vaxerman.go enemy.go level.go
+	go run main.go vaxerman.go enemy.go bullet.go level.go
 
 # Build WASM for web browser
 buildweb:
-	# If you are on windows uncomment the following
-	# set GOOS=js GOARCH=wasm go build -o ./build/web/gametest.wasm github.com/paulcockrell/gametest
 	GOOS=js GOARCH=wasm go build -o ./build/web/gametest.wasm github.com/paulcockrell/gametest
 
 # Run web version locally

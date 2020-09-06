@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/hajimehoshi/ebiten"
+	"github.com/hajimehoshi/ebiten/inpututil"
 	"github.com/paulcockrell/gametest/resources/images"
 )
 
@@ -51,13 +52,13 @@ type VaxerMan struct {
 func NewVaxerMan(x, y int) *VaxerMan {
 	var a VaxerManActions = VaxerManIdle | VaxerManRight
 
-	r := &VaxerMan{
+	v := &VaxerMan{
 		x:       x,
 		y:       y,
 		actions: a,
 	}
 
-	r.sprites = map[VaxerManActions]Sprite{
+	v.sprites = map[VaxerManActions]Sprite{
 		VaxerManLeft | VaxerManIdle: {
 			image:       vaxermanImage,
 			numFrames:   6,
@@ -156,49 +157,75 @@ func NewVaxerMan(x, y int) *VaxerMan {
 		},
 	}
 
-	return r
+	return v
 }
 
-func (r *VaxerMan) update() {
+// SetDead sets vaxermans actions to VaxerManDead
+func (v *VaxerMan) SetDead() {
+	v.actions = VaxerManDead
+}
+
+// IsDead returns true if vaxermans actions contains VaxerManDead
+func (v *VaxerMan) IsDead() bool {
+	return v.actions.Has(VaxerManDead)
+}
+
+func (v *VaxerMan) update() {
 	const moveBy = 2
 
+	// Update bullets
+	var activeBullets []*Bullet
+	for _, bullet := range v.bullets {
+		bullet.Update()
+		if bullet.IsLive() {
+			activeBullets = append(activeBullets, bullet)
+		}
+	}
+	v.bullets = activeBullets
+
+	// If VaxerMan is dead, do nothing
+	if v.IsDead() {
+		return
+	}
+
 	// Reset velocity values
-	r.vx = 0
-	r.vy = 0
+	v.vx = 0
+	v.vy = 0
 
 	// Reset movement to default idle
-	r.actions = r.actions &^ (VaxerManRun | VaxerManShoot)
-	r.actions = r.actions | VaxerManIdle
+	v.actions = v.actions &^ (VaxerManRun | VaxerManShoot)
+	v.actions = v.actions | VaxerManIdle
 
 	// VaxerManUpdate vaxerman state based on keyboard input
 	// H - VaxerManLeft
 	if ebiten.IsKeyPressed(ebiten.KeyH) {
-		r.actions = VaxerManLeft | VaxerManRun
-		r.vx -= moveBy
+		v.actions = VaxerManLeft | VaxerManRun
+		v.vx -= moveBy
 	}
 
 	// L - VaxerManRight
 	if ebiten.IsKeyPressed(ebiten.KeyL) {
-		r.actions = VaxerManRight | VaxerManRun
-		r.vx += moveBy
+		v.actions = VaxerManRight | VaxerManRun
+		v.vx += moveBy
 	}
 
 	// K - VaxerManUp
 	if ebiten.IsKeyPressed(ebiten.KeyK) {
-		r.actions = VaxerManUp | VaxerManRun
-		r.vy -= moveBy
+		v.actions = VaxerManUp | VaxerManRun
+		v.vy -= moveBy
 	}
 
 	// J - VaxerManDown
 	if ebiten.IsKeyPressed(ebiten.KeyJ) {
-		r.actions = VaxerManDown | VaxerManRun
-		r.vy += moveBy
+		v.actions = VaxerManDown | VaxerManRun
+		v.vy += moveBy
 	}
 
 	// SPACE - Spacebar
-	if ebiten.IsKeyPressed(ebiten.KeySpace) {
-		if len(r.bullets) < maxBullets {
-			direction := vaxermanDirToBulletDir(r)
+	if inpututil.IsKeyJustReleased(ebiten.KeySpace) {
+		// If VaxerMan is dead, do nothing
+		if len(v.bullets) < maxBullets {
+			direction := vaxermanDirToBulletDir(v)
 			vx, vy := 0, 0
 			switch direction {
 			case BulletLeft:
@@ -211,126 +238,92 @@ func (r *VaxerMan) update() {
 				vy += 32 / 2
 			}
 			bullet := NewBullet(
-				r.x+vx,
-				r.y+vy,
+				v.x+vx,
+				v.y+vy,
 				direction,
 			)
-			r.bullets = append(r.bullets, bullet)
+			v.bullets = append(v.bullets, bullet)
 
 		}
-		r.actions = r.actions &^ (VaxerManIdle | VaxerManRun)
-		r.actions = r.actions | VaxerManShoot
+		v.actions = v.actions &^ (VaxerManIdle | VaxerManRun)
+		v.actions = v.actions | VaxerManShoot
 	}
 
 	// VaxerManUpdate sprite's x & y positions based on velocity values and
 	// frame counter used by animation
-	r.frameCount++
-	r.x += r.vx
-	r.y += r.vy
+	v.frameCount++
+	v.x += v.vx
+	v.y += v.vy
 
 	// Wall collision detection
-	s := r.getSprite()
-	if r.x < 0 {
-		r.x = 0
+	s := v.GetSprite()
+	if v.x < 0 {
+		v.x = 0
 	}
 	//if r.x >= screenWidth-(s.frameWidth/2) {
-	if r.x > screenWidth-s.frameWidth {
-		r.x = screenWidth - s.frameWidth
+	if v.x > screenWidth-s.frameWidth {
+		v.x = screenWidth - s.frameWidth
 	}
-	if r.y < 0 {
-		r.y = 0
+	if v.y < 0 {
+		v.y = 0
 	}
-	if r.y > screenHeight-s.frameHeight {
-		r.y = screenHeight - s.frameHeight
+	if v.y > screenHeight-s.frameHeight {
+		v.y = screenHeight - s.frameHeight
 	}
-
-	// VaxerManUpdate bullets if any
-	var activeBullets []*Bullet
-	for _, bullet := range r.bullets {
-		if bullet.actions.Has(BulletLeft) {
-			bullet.x -= 5
-		}
-		if bullet.actions.Has(BulletRight) {
-			bullet.x += 5
-		}
-		if bullet.actions.Has(BulletUp) {
-			bullet.y -= 5
-		}
-		if bullet.actions.Has(BulletDown) {
-			bullet.y += 5
-		}
-
-		// If on screen keep bullet
-		if bullet.x > 0 && bullet.x < screenWidth &&
-			bullet.y > 0 && bullet.y < screenHeight {
-			activeBullets = append(activeBullets, bullet)
-		}
-	}
-	r.bullets = activeBullets
 }
 
-func (r VaxerMan) direction() VaxerManActions {
+func (v VaxerMan) direction() VaxerManActions {
 	switch {
-	case r.actions.Has(VaxerManLeft):
+	case v.actions.Has(VaxerManLeft):
 		return VaxerManLeft
-	case r.actions.Has(VaxerManRight):
+	case v.actions.Has(VaxerManRight):
 		return VaxerManRight
-	case r.actions.Has(VaxerManUp):
+	case v.actions.Has(VaxerManUp):
 		return VaxerManUp
-	case r.actions.Has(VaxerManDown):
+	case v.actions.Has(VaxerManDown):
 		return VaxerManDown
 	default:
 		return VaxerManRight
 	}
 }
 
-func (r VaxerMan) action() VaxerManActions {
+func (v VaxerMan) action() VaxerManActions {
 	switch {
-	case r.actions.Has(VaxerManIdle):
+	case v.actions.Has(VaxerManIdle):
 		return VaxerManIdle
-	case r.actions.Has(VaxerManRun):
+	case v.actions.Has(VaxerManRun):
 		return VaxerManRun
-	case r.actions.Has(VaxerManShoot):
+	case v.actions.Has(VaxerManShoot):
 		return VaxerManShoot
 	default:
 		return VaxerManIdle
 	}
 }
 
-func (r VaxerMan) getSprite() Sprite {
-	direction := r.direction()
-	action := r.action()
+func (v VaxerMan) GetSprite() Sprite {
+	direction := v.direction()
+	action := v.action()
 
-	return r.sprites[direction|action]
+	return v.sprites[direction|action]
 }
 
-func (r *VaxerMan) draw(screen *ebiten.Image) {
-	sprite := r.getSprite()
+func (v *VaxerMan) draw(screen *ebiten.Image) {
+	sprite := v.GetSprite()
 
 	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(float64(r.x), float64(r.y))
+	op.GeoM.Translate(float64(v.x), float64(v.y))
 
 	// Extract sprite frame
-	i := (r.frameCount / sprite.numFrames) % sprite.numFrames
+	i := (v.frameCount / sprite.numFrames) % sprite.numFrames
 	sx, sy := sprite.frameOX+i*sprite.frameWidth, sprite.frameOY
 	spriteSubImage := sprite.image.SubImage(image.Rect(sx, sy, sx+sprite.frameWidth, sy+sprite.frameHeight)).(*ebiten.Image)
 
 	screen.DrawImage(spriteSubImage, op)
 }
 
-func (r *VaxerMan) drawBullets(screen *ebiten.Image) {
-	for _, bullet := range r.bullets {
-		sprite := bullet.sprite
-
-		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Translate(float64(bullet.x), float64(bullet.y))
-
-		// Extract sprite frame
-		i := (r.frameCount / sprite.numFrames) % sprite.numFrames
-		sx, sy := sprite.frameOX+i*sprite.frameWidth, sprite.frameOY
-		spriteSubImage := sprite.image.SubImage(image.Rect(sx, sy, sx+sprite.frameWidth, sy+sprite.frameHeight)).(*ebiten.Image)
-
-		screen.DrawImage(spriteSubImage, op)
+func (v *VaxerMan) drawBullets(screen *ebiten.Image) {
+	for _, bullet := range v.bullets {
+		bullet.draw(screen)
 	}
 }
 
@@ -344,6 +337,7 @@ func (v *VaxerMan) hasShotEnemy(e *Enemy) bool {
 	for _, bullet := range v.bullets {
 		if bullet.x >= e.x && bullet.x <= e.x+enemySprite.frameHeight &&
 			bullet.y >= e.y && bullet.y <= e.y+enemySprite.frameWidth {
+			bullet.SetHit()
 			return true
 		}
 	}
@@ -351,16 +345,16 @@ func (v *VaxerMan) hasShotEnemy(e *Enemy) bool {
 	return false
 }
 
-func vaxermanDirToBulletDir(r *VaxerMan) BulletActions {
+func vaxermanDirToBulletDir(v *VaxerMan) BulletActions {
 	var direction BulletActions
 	switch {
-	case r.actions.Has(VaxerManLeft):
+	case v.actions.Has(VaxerManLeft):
 		direction = BulletLeft
-	case r.actions.Has(VaxerManRight):
+	case v.actions.Has(VaxerManRight):
 		direction = BulletRight
-	case r.actions.Has(VaxerManUp):
+	case v.actions.Has(VaxerManUp):
 		direction = BulletUp
-	case r.actions.Has(VaxerManDown):
+	case v.actions.Has(VaxerManDown):
 		direction = BulletDown
 	}
 

@@ -15,6 +15,7 @@ var (
 )
 
 const (
+	// MaxEnemies sets the limit of enemies that can be 'alive' at any one time
 	MaxEnemies = 5
 )
 
@@ -26,6 +27,7 @@ func init() {
 	enemyImage, _ = ebiten.NewImageFromImage(img, ebiten.FilterDefault)
 }
 
+// EnemyActions is an integer type that holds the various Enemy actions
 type EnemyActions uint8
 
 const (
@@ -34,15 +36,17 @@ const (
 	EnemyDead
 )
 
+// Enemy defines an enemy
 type Enemy struct {
-	x, y           int
-	vx, vy         int
-	frameCount     int
-	animFrameCount int // used to make sure we play a whole anim sequence at least once
-	status         EnemyActions
-	sprites        map[EnemyActions]Sprite
+	x, y          int
+	vx, vy        int
+	frameCount    int
+	hitFrameCount int // used to make sure we play a whole hit anim sequence at least once
+	status        EnemyActions
+	sprites       map[EnemyActions]Sprite
 }
 
+// NewEnemy builds an enemy at the given position and velocity
 func NewEnemy(x, y, vx, vy int) *Enemy {
 	e := &Enemy{
 		x:      x,
@@ -55,7 +59,7 @@ func NewEnemy(x, y, vx, vy int) *Enemy {
 	e.sprites = map[EnemyActions]Sprite{
 		EnemyAlive: {
 			image:       enemyImage,
-			numFrames:   2,
+			numFrames:   1,
 			frameOX:     32 * 0,
 			frameOY:     32 * 0,
 			frameHeight: 32,
@@ -63,7 +67,7 @@ func NewEnemy(x, y, vx, vy int) *Enemy {
 		},
 		EnemyHit: {
 			image:       enemyImage,
-			numFrames:   6,
+			numFrames:   4,
 			frameOX:     32 * 0,
 			frameOY:     32 * 1,
 			frameHeight: 32,
@@ -72,8 +76,8 @@ func NewEnemy(x, y, vx, vy int) *Enemy {
 		EnemyDead: {
 			image:       enemyImage,
 			numFrames:   1,
-			frameOX:     32 * 0,
-			frameOY:     32 * 2,
+			frameOX:     32 * 1,
+			frameOY:     32 * 0,
 			frameHeight: 32,
 			frameWidth:  32,
 		},
@@ -83,6 +87,15 @@ func NewEnemy(x, y, vx, vy int) *Enemy {
 }
 
 func (e *Enemy) update() {
+	if e.status == EnemyHit {
+		e.hitFrameCount++
+
+		if e.hitFrameCount > e.GetSprite().numFrames {
+			e.status = EnemyDead
+			return
+		}
+	}
+
 	e.frameCount++
 	e.x += e.vx
 	e.y += e.vy
@@ -105,11 +118,30 @@ func (e *Enemy) draw(screen *ebiten.Image) {
 	screen.DrawImage(spriteSubImage, op)
 }
 
+// GetSprite returns the current sprite by status
 func (e *Enemy) GetSprite() (sprite Sprite) {
 	sprite = e.sprites[e.status]
 	return
 }
 
+// HasInfectedPlayer returns bool based on collision between enemy and player
+func (e *Enemy) HasInfectedPlayer(v *VaxerMan) bool {
+	// You can only infect VaxerMan once
+	if v.actions.Has(VaxerManDead) {
+		return false
+	}
+
+	playerSprite := v.GetSprite()
+	if e.x >= v.x && e.x <= v.x+playerSprite.frameHeight &&
+		e.y >= v.y && e.y <= v.y+playerSprite.frameWidth {
+		return true
+	}
+
+	return false
+
+}
+
+// GenerateEnemyStartPos randomly generates position and velocity values
 func GenerateEnemyStartPos() (x, y, vx, vy int) {
 	coinFlipOne := rand.Intn(1)
 	coinFlipTwo := rand.Intn(1)
