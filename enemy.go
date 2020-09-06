@@ -35,11 +35,12 @@ const (
 )
 
 type Enemy struct {
-	x, y       int
-	vx, vy     int
-	frameCount int
-	status     EnemyActions
-	sprites    map[EnemyActions]Sprite
+	x, y           int
+	vx, vy         int
+	frameCount     int
+	animFrameCount int // used to make sure we play a whole anim sequence at least once
+	status         EnemyActions
+	sprites        map[EnemyActions]Sprite
 }
 
 func NewEnemy(x, y, vx, vy int) *Enemy {
@@ -91,7 +92,7 @@ func (e *Enemy) update() {
 }
 
 func (e *Enemy) draw(screen *ebiten.Image) {
-	sprite := e.sprites[e.status]
+	sprite := e.GetSprite()
 
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(float64(e.x), float64(e.y))
@@ -102,6 +103,11 @@ func (e *Enemy) draw(screen *ebiten.Image) {
 	spriteSubImage := sprite.image.SubImage(image.Rect(sx, sy, sx+sprite.frameWidth, sy+sprite.frameHeight)).(*ebiten.Image)
 
 	screen.DrawImage(spriteSubImage, op)
+}
+
+func (e *Enemy) GetSprite() (sprite Sprite) {
+	sprite = e.sprites[e.status]
+	return
 }
 
 func GenerateEnemyStartPos() (x, y, vx, vy int) {

@@ -11,11 +11,6 @@ import (
 
 var (
 	vaxermanImage *ebiten.Image
-	bulletImage   *ebiten.Image
-)
-
-const (
-	maxBullets = 3
 )
 
 func init() {
@@ -24,19 +19,6 @@ func init() {
 		log.Fatalf("error decoding image: %v", err)
 	}
 	vaxermanImage, _ = ebiten.NewImageFromImage(img, ebiten.FilterDefault)
-
-	img, _, err = image.Decode(bytes.NewReader(images.Bullet_png))
-	if err != nil {
-		log.Fatalf("error decoding image: %v", err)
-	}
-	bulletImage, _ = ebiten.NewImageFromImage(img, ebiten.FilterDefault)
-}
-
-type Sprite struct {
-	image                   *ebiten.Image
-	numFrames               int
-	frameOX, frameOY        int
-	frameHeight, frameWidth int
 }
 
 type VaxerManActions uint16
@@ -55,44 +37,6 @@ const (
 
 func (ra VaxerManActions) Has(flags VaxerManActions) bool {
 	return ra&flags != 0
-}
-
-type BulletActions uint8
-
-const (
-	BulletLeft BulletActions = 1 << iota
-	BulletRight
-	BulletUp
-	BulletDown
-	BulletHit
-)
-
-func (ba BulletActions) Has(flags BulletActions) bool {
-	return ba&flags != 0
-}
-
-type Bullet struct {
-	sprite  Sprite
-	actions BulletActions
-	x, y    int
-}
-
-func NewBullet(x, y int, a BulletActions) *Bullet {
-	b := &Bullet{
-		x:       x, // starting x
-		y:       y, // starting y
-		actions: a, // holds direction
-	}
-	b.sprite = Sprite{
-		image:       bulletImage,
-		numFrames:   2,
-		frameOX:     0,
-		frameOY:     0,
-		frameHeight: 32,
-		frameWidth:  32,
-	}
-
-	return b
 }
 
 type VaxerMan struct {
@@ -252,8 +196,7 @@ func (r *VaxerMan) update() {
 	}
 
 	// SPACE - Spacebar
-	//if inpututil.IsKeyJustPressed(ebiten.KeyI) {
-	if ebiten.IsKeyPressed(ebiten.KeyI) {
+	if ebiten.IsKeyPressed(ebiten.KeySpace) {
 		if len(r.bullets) < maxBullets {
 			direction := vaxermanDirToBulletDir(r)
 			vx, vy := 0, 0
@@ -389,6 +332,23 @@ func (r *VaxerMan) drawBullets(screen *ebiten.Image) {
 
 		screen.DrawImage(spriteSubImage, op)
 	}
+}
+
+func (v *VaxerMan) hasShotEnemy(e *Enemy) bool {
+	if e.status != EnemyAlive {
+		return false
+	}
+
+	enemySprite := e.GetSprite()
+
+	for _, bullet := range v.bullets {
+		if bullet.x >= e.x && bullet.x <= e.x+enemySprite.frameHeight &&
+			bullet.y >= e.y && bullet.y <= e.y+enemySprite.frameWidth {
+			return true
+		}
+	}
+
+	return false
 }
 
 func vaxermanDirToBulletDir(r *VaxerMan) BulletActions {
