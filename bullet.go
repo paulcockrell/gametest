@@ -14,7 +14,7 @@ var (
 )
 
 const (
-	maxBullets = 3
+	maxBullets = 10
 )
 
 func init() {

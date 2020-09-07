@@ -6,7 +6,6 @@ import (
 	"log"
 
 	"github.com/hajimehoshi/ebiten"
-	"github.com/hajimehoshi/ebiten/inpututil"
 	"github.com/paulcockrell/gametest/resources/images"
 )
 
@@ -41,6 +40,7 @@ func (ra VaxerManActions) Has(flags VaxerManActions) bool {
 }
 
 type VaxerMan struct {
+	lives      int
 	x, y       int
 	vx, vy     int
 	frameCount int
@@ -56,6 +56,7 @@ func NewVaxerMan(x, y int) *VaxerMan {
 		x:       x,
 		y:       y,
 		actions: a,
+		lives:   3,
 	}
 
 	v.sprites = map[VaxerManActions]Sprite{
@@ -160,9 +161,13 @@ func NewVaxerMan(x, y int) *VaxerMan {
 	return v
 }
 
-// SetDead sets vaxermans actions to VaxerManDead
-func (v *VaxerMan) SetDead() {
-	v.actions = VaxerManDead
+// Infect decrements the lives counter, if lives counter reaches zero it sets
+// VaxerMan to dead
+func (v *VaxerMan) Infect() {
+	v.lives -= 1
+	if v.lives == 0 {
+		v.actions = VaxerManDead
+	}
 }
 
 // IsDead returns true if vaxermans actions contains VaxerManDead
@@ -196,33 +201,33 @@ func (v *VaxerMan) update() {
 	v.actions = v.actions &^ (VaxerManRun | VaxerManShoot)
 	v.actions = v.actions | VaxerManIdle
 
-	// VaxerManUpdate vaxerman state based on keyboard input
-	// H - VaxerManLeft
-	if ebiten.IsKeyPressed(ebiten.KeyH) {
+	// Respond to keyboard inputs
+	// VaxerManLeft
+	if ebiten.IsKeyPressed(ebiten.KeyLeft) {
 		v.actions = VaxerManLeft | VaxerManRun
 		v.vx -= moveBy
 	}
 
-	// L - VaxerManRight
-	if ebiten.IsKeyPressed(ebiten.KeyL) {
+	// VaxerManRight
+	if ebiten.IsKeyPressed(ebiten.KeyRight) {
 		v.actions = VaxerManRight | VaxerManRun
 		v.vx += moveBy
 	}
 
-	// K - VaxerManUp
-	if ebiten.IsKeyPressed(ebiten.KeyK) {
+	// VaxerManUp
+	if ebiten.IsKeyPressed(ebiten.KeyUp) {
 		v.actions = VaxerManUp | VaxerManRun
 		v.vy -= moveBy
 	}
 
-	// J - VaxerManDown
-	if ebiten.IsKeyPressed(ebiten.KeyJ) {
+	// VaxerManDown
+	if ebiten.IsKeyPressed(ebiten.KeyDown) {
 		v.actions = VaxerManDown | VaxerManRun
 		v.vy += moveBy
 	}
 
 	// SPACE - Spacebar
-	if inpututil.IsKeyJustReleased(ebiten.KeySpace) {
+	if ebiten.IsKeyPressed(ebiten.KeySpace) {
 		// If VaxerMan is dead, do nothing
 		if len(v.bullets) < maxBullets {
 			direction := vaxermanDirToBulletDir(v)
@@ -260,7 +265,6 @@ func (v *VaxerMan) update() {
 	if v.x < 0 {
 		v.x = 0
 	}
-	//if r.x >= screenWidth-(s.frameWidth/2) {
 	if v.x > screenWidth-s.frameWidth {
 		v.x = screenWidth - s.frameWidth
 	}

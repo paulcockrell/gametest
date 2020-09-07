@@ -16,7 +16,7 @@ var (
 
 const (
 	// MaxEnemies sets the limit of enemies that can be 'alive' at any one time
-	MaxEnemies = 5
+	MaxEnemies = 3
 )
 
 func init() {
@@ -43,17 +43,19 @@ type Enemy struct {
 	frameCount    int
 	hitFrameCount int // used to make sure we play a whole hit anim sequence at least once
 	status        EnemyActions
+	isInfectious  bool
 	sprites       map[EnemyActions]Sprite
 }
 
 // NewEnemy builds an enemy at the given position and velocity
 func NewEnemy(x, y, vx, vy int) *Enemy {
 	e := &Enemy{
-		x:      x,
-		y:      y,
-		vx:     vx,
-		vy:     vy,
-		status: EnemyAlive,
+		x:            x,
+		y:            y,
+		vx:           vx,
+		vy:           vy,
+		status:       EnemyAlive,
+		isInfectious: true,
 	}
 
 	e.sprites = map[EnemyActions]Sprite{
@@ -124,27 +126,39 @@ func (e *Enemy) GetSprite() (sprite Sprite) {
 	return
 }
 
+// IsDead return true if status is EnemyDead
+func (e Enemy) IsDead() bool {
+	return e.status == EnemyDead
+}
+
 // HasInfectedPlayer returns bool based on collision between enemy and player
 func (e *Enemy) HasInfectedPlayer(v *VaxerMan) bool {
 	// You can only infect VaxerMan once
+	if !e.isInfectious {
+		return false
+	}
 	if v.actions.Has(VaxerManDead) {
 		return false
 	}
 
-	playerSprite := v.GetSprite()
-	if e.x >= v.x && e.x <= v.x+playerSprite.frameHeight &&
-		e.y >= v.y && e.y <= v.y+playerSprite.frameWidth {
-		return true
+	eSprite := e.GetSprite()
+	vSprite := v.GetSprite()
+	if e.x >= v.x+vSprite.frameWidth || v.x >= e.x+eSprite.frameWidth {
+		return false
+	}
+	if e.y >= v.y+vSprite.frameHeight || v.y >= e.y+eSprite.frameHeight {
+		return false
 	}
 
-	return false
+	e.isInfectious = false
 
+	return true
 }
 
 // GenerateEnemyStartPos randomly generates position and velocity values
 func GenerateEnemyStartPos() (x, y, vx, vy int) {
-	coinFlipOne := rand.Intn(1)
-	coinFlipTwo := rand.Intn(1)
+	coinFlipOne := rand.Intn(2)
+	coinFlipTwo := rand.Intn(2)
 	if coinFlipOne == 1 {
 		x = rand.Intn(screenWidth)
 		if coinFlipTwo == 1 {
