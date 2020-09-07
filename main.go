@@ -131,14 +131,14 @@ func (g *Game) updateEnemies() {
 
 func (g *Game) drawInfo(screen *ebiten.Image) {
 	if g.vaxerman.IsDead() {
-		texts := []string{"VaxerMan is too ill to fight on..", "", "", "", "Press R key to restart"}
+		texts := []string{"VaxerMan has been infected!", "", "", "", "Press 'R' to restart"}
 		for i, l := range texts {
-			x := (screenWidth - len(l)*fontSize) / 3
-			text.Draw(screen, l, smallArcadeFont, x, (i+4)*fontSize, color.White)
+			x := (screenWidth - len(l)*smallFontSize) / 2
+			text.Draw(screen, l, smallArcadeFont, x, (i+20)*smallFontSize, color.White)
 		}
 	}
-	lives := fmt.Sprintf("Lives: %d", g.vaxerman.lives)
-	text.Draw(screen, lives, smallArcadeFont, 150, 12, color.White)
+	health := fmt.Sprintf("Health: %d%%", g.vaxerman.Health)
+	text.Draw(screen, health, smallArcadeFont, 170, 12, color.White)
 }
 
 func main() {

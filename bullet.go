@@ -13,10 +13,6 @@ var (
 	bulletImage *ebiten.Image
 )
 
-const (
-	maxBullets = 10
-)
-
 func init() {
 	img, _, err := image.Decode(bytes.NewReader(images.Bullet_png))
 	if err != nil {
@@ -55,11 +51,11 @@ func NewBullet(x, y int, a BulletActions) *Bullet {
 	}
 	b.sprite = Sprite{
 		image:       bulletImage,
-		numFrames:   2,
+		numFrames:   4,
 		frameOX:     0,
 		frameOY:     0,
-		frameHeight: 32,
-		frameWidth:  32,
+		frameHeight: 14,
+		frameWidth:  14,
 	}
 
 	return b
@@ -109,6 +105,11 @@ func (b *Bullet) Update() {
 	b.frameCount++
 }
 
+// GetSprite returns the current sprite by status
+func (b *Bullet) GetSprite() (sprite Sprite) {
+	return b.sprite
+}
+
 // IsLive checks if bullet is on screen and state doesn't include BulletHit
 func (b *Bullet) IsLive() bool {
 	if b.actions.Has(BulletHit) {
@@ -118,6 +119,19 @@ func (b *Bullet) IsLive() bool {
 	// Is bullet on screen
 	if b.x < 0 || b.x > screenWidth ||
 		b.y < 0 || b.y > screenHeight {
+		return false
+	}
+
+	return true
+}
+
+func (b *Bullet) HasHitEnemy(e *Enemy) bool {
+	bSprite := b.GetSprite()
+	eSprite := e.GetSprite()
+	if b.x >= e.x+eSprite.frameWidth || e.x >= b.x+bSprite.frameWidth {
+		return false
+	}
+	if b.y >= e.y+eSprite.frameHeight || e.y >= b.y+bSprite.frameHeight {
 		return false
 	}
 

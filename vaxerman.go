@@ -9,6 +9,10 @@ import (
 	"github.com/paulcockrell/gametest/resources/images"
 )
 
+const (
+	maxBullets = 3
+)
+
 var (
 	vaxermanImage *ebiten.Image
 )
@@ -40,13 +44,14 @@ func (ra VaxerManActions) Has(flags VaxerManActions) bool {
 }
 
 type VaxerMan struct {
-	lives      int
-	x, y       int
-	vx, vy     int
-	frameCount int
-	actions    VaxerManActions
-	sprites    map[VaxerManActions]Sprite
-	bullets    []*Bullet
+	Health      int
+	x, y        int
+	vx, vy      int
+	frameCount  int
+	actions     VaxerManActions
+	sprites     map[VaxerManActions]Sprite
+	bullets     []*Bullet
+	firingTimer int
 }
 
 func NewVaxerMan(x, y int) *VaxerMan {
@@ -56,7 +61,7 @@ func NewVaxerMan(x, y int) *VaxerMan {
 		x:       x,
 		y:       y,
 		actions: a,
-		lives:   3,
+		Health:  100,
 	}
 
 	v.sprites = map[VaxerManActions]Sprite{
@@ -164,8 +169,8 @@ func NewVaxerMan(x, y int) *VaxerMan {
 // Infect decrements the lives counter, if lives counter reaches zero it sets
 // VaxerMan to dead
 func (v *VaxerMan) Infect() {
-	v.lives -= 1
-	if v.lives == 0 {
+	v.Health -= 10
+	if v.Health == 0 {
 		v.actions = VaxerManDead
 	}
 }
@@ -227,28 +232,46 @@ func (v *VaxerMan) update() {
 	}
 
 	// SPACE - Spacebar
-	if ebiten.IsKeyPressed(ebiten.KeySpace) {
-		// If VaxerMan is dead, do nothing
+	if ebiten.IsKeyPressed(ebiten.KeySpace) && v.canFire() {
 		if len(v.bullets) < maxBullets {
-			direction := vaxermanDirToBulletDir(v)
-			vx, vy := 0, 0
-			switch direction {
-			case BulletLeft:
-				vx -= 32 / 2
-			case BulletRight:
-				vx += 32 / 2
-			case BulletUp:
-				vy -= 32 / 2
-			case BulletDown:
-				vy += 32 / 2
-			}
 			bullet := NewBullet(
-				v.x+vx,
-				v.y+vy,
-				direction,
+				0,
+				0,
+				vaxermanDirToBulletDir(v),
 			)
-			v.bullets = append(v.bullets, bullet)
 
+			bx, by := v.x, v.y
+			if v.actions.Has(VaxerManLeft) {
+				bx -= v.GetSprite().frameWidth / 2
+				by += (v.GetSprite().frameWidth / 2) - (bullet.sprite.frameHeight / 2)
+			}
+			if v.actions.Has(VaxerManRight) {
+				bx += v.GetSprite().frameWidth
+				by += (v.GetSprite().frameWidth / 2) - (bullet.sprite.frameHeight / 2)
+			}
+			if v.actions.Has(VaxerManUp) {
+				by -= v.GetSprite().frameHeight / 2
+				bx += (v.GetSprite().frameHeight / 2) - (bullet.sprite.frameWidth / 2)
+			}
+			if v.actions.Has(VaxerManDown) {
+				by += v.GetSprite().frameHeight
+				bx += (v.GetSprite().frameHeight / 2) - (bullet.sprite.frameWidth / 2)
+			}
+
+			/*
+				if v.actions.Has(VaxerManLeft | VaxerManRight) {
+					by += 32 / 2
+				}
+				if v.actions.Has(VaxerManUp | VaxerManDown) {
+					bx += 32 / 2
+				}
+			*/
+
+			bullet.x = bx
+			bullet.y = by
+
+			v.firingTimer = 5
+			v.bullets = append(v.bullets, bullet)
 		}
 		v.actions = v.actions &^ (VaxerManIdle | VaxerManRun)
 		v.actions = v.actions | VaxerManShoot
@@ -259,6 +282,10 @@ func (v *VaxerMan) update() {
 	v.frameCount++
 	v.x += v.vx
 	v.y += v.vy
+
+	if v.firingTimer > 0 {
+		v.firingTimer -= 1
+	}
 
 	// Wall collision detection
 	s := v.GetSprite()
@@ -336,17 +363,19 @@ func (v *VaxerMan) hasShotEnemy(e *Enemy) bool {
 		return false
 	}
 
-	enemySprite := e.GetSprite()
-
 	for _, bullet := range v.bullets {
-		if bullet.x >= e.x && bullet.x <= e.x+enemySprite.frameHeight &&
-			bullet.y >= e.y && bullet.y <= e.y+enemySprite.frameWidth {
+		if bullet.HasHitEnemy(e) {
+			e.SetNotInfectious()
 			bullet.SetHit()
 			return true
 		}
 	}
 
 	return false
+}
+
+func (v VaxerMan) canFire() bool {
+	return v.firingTimer == 0
 }
 
 func vaxermanDirToBulletDir(v *VaxerMan) BulletActions {

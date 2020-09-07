@@ -61,7 +61,7 @@ func NewEnemy(x, y, vx, vy int) *Enemy {
 	e.sprites = map[EnemyActions]Sprite{
 		EnemyAlive: {
 			image:       enemyImage,
-			numFrames:   1,
+			numFrames:   4,
 			frameOX:     32 * 0,
 			frameOY:     32 * 0,
 			frameHeight: 32,
@@ -131,10 +131,18 @@ func (e Enemy) IsDead() bool {
 	return e.status == EnemyDead
 }
 
+func (e Enemy) IsInfectious() bool {
+	return e.isInfectious
+}
+
+func (e *Enemy) SetNotInfectious() {
+	e.isInfectious = false
+}
+
 // HasInfectedPlayer returns bool based on collision between enemy and player
 func (e *Enemy) HasInfectedPlayer(v *VaxerMan) bool {
 	// You can only infect VaxerMan once
-	if !e.isInfectious {
+	if !e.IsInfectious() {
 		return false
 	}
 	if v.actions.Has(VaxerManDead) {
@@ -150,7 +158,7 @@ func (e *Enemy) HasInfectedPlayer(v *VaxerMan) bool {
 		return false
 	}
 
-	e.isInfectious = false
+	e.SetNotInfectious()
 
 	return true
 }
