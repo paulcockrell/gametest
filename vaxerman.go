@@ -258,15 +258,6 @@ func (v *VaxerMan) update() {
 				bx += (v.GetSprite().frameHeight / 2) - (bullet.sprite.frameWidth / 2)
 			}
 
-			/*
-				if v.actions.Has(VaxerManLeft | VaxerManRight) {
-					by += 32 / 2
-				}
-				if v.actions.Has(VaxerManUp | VaxerManDown) {
-					bx += 32 / 2
-				}
-			*/
-
 			bullet.x = bx
 			bullet.y = by
 
@@ -367,6 +358,8 @@ func (v *VaxerMan) hasShotEnemy(e *Enemy) bool {
 		if bullet.HasHitEnemy(e) {
 			e.SetNotInfectious()
 			bullet.SetHit()
+			boomPlayer.Rewind()
+			boomPlayer.Play()
 			return true
 		}
 	}

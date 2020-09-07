@@ -158,6 +158,9 @@ func (e *Enemy) HasInfectedPlayer(v *VaxerMan) bool {
 		return false
 	}
 
+	sneezePlayer.Rewind()
+	sneezePlayer.Play()
+
 	e.SetNotInfectious()
 
 	return true

@@ -10,8 +10,11 @@ import (
 
 	"github.com/golang/freetype/truetype"
 	"github.com/hajimehoshi/ebiten"
+	"github.com/hajimehoshi/ebiten/audio"
+	"github.com/hajimehoshi/ebiten/audio/wav"
 	"github.com/hajimehoshi/ebiten/examples/resources/fonts"
 	"github.com/hajimehoshi/ebiten/text"
+	"github.com/paulcockrell/gametest/resources/sfx"
 	"golang.org/x/image/font"
 )
 
@@ -32,6 +35,7 @@ var (
 	smallArcadeFont font.Face
 )
 
+// Load fonts
 func init() {
 	tt, err := truetype.Parse(fonts.ArcadeN_ttf)
 	if err != nil {
@@ -48,6 +52,41 @@ func init() {
 		DPI:     dpi,
 		Hinting: font.HintingFull,
 	})
+}
+
+var (
+	audioContext *audio.Context
+	boomPlayer   *audio.Player
+	sneezePlayer *audio.Player
+)
+
+const (
+	sampleRate = 44100
+)
+
+func init() {
+	audioContext, err := audio.NewContext(sampleRate)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	boomD, err := wav.Decode(audioContext, audio.BytesReadSeekCloser(sfx.Boom_wav))
+	if err != nil {
+		log.Fatal(err)
+	}
+	boomPlayer, err = audio.NewPlayer(audioContext, boomD)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	sneezeD, err := wav.Decode(audioContext, audio.BytesReadSeekCloser(sfx.Sneeze_wav))
+	if err != nil {
+		log.Fatal(err)
+	}
+	sneezePlayer, err = audio.NewPlayer(audioContext, sneezeD)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 type Sprite struct {
